@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/samuell/glow"
 	"net/http"
@@ -15,9 +16,18 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 	glow.NewCommandExecutor(cmdIn, linesOut)
 	cmdIn <- "ils"
 
-	fmt.Fprint(w, "<ul>")
+	cnt := 0
 	for line := range linesOut {
-		fmt.Fprint(w, "<li>", string(line), "</li>")
+		if cnt > 0 {
+			line := bytes.Replace(line, []byte("  C- "), []byte(""), 1)
+			pathParts := bytes.Split(line, []byte("/"))
+			folderName := pathParts[len(pathParts)-1]
+			fmt.Fprint(w, "<li><a href=\"/irods", string(line), "\">", string(folderName), "</a></li>")
+		} else {
+			fmt.Fprint(w, "<p>Current folder: ", string(line), "</p>")
+			fmt.Fprint(w, "<ul>")
+		}
+		cnt++
 	}
 	fmt.Fprint(w, "</ul>")
 }
