@@ -11,7 +11,7 @@ import (
 )
 
 func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "<h1>iRODS Thin UI</h1>")
+	fmt.Fprint(w, "<h1>uiRODS</h1>")
 
 	targetFolder := strings.Replace(r.URL.RequestURI(), "/irods", "", 1)
 
