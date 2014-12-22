@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/samuell/glow"
 	"log"
@@ -10,31 +11,45 @@ import (
 	"strings"
 )
 
+const (
+	iRodsHandlerBasePath = "/irods"
+	filesHandlerBasePath = "/files"
+)
+
 var (
+	port = flag.Int("p", 8080, "HTTP Listening port")
+	host = flag.String("h", "localhost", "HTTP Listening host")
+
 	physicalMntPath = os.Getenv("IRODSMNT_PHYSPATH")
 	irodsMntPath    = os.Getenv("IRODSMNT_IRODSPATH")
+
+	headerHtml = `<html><head><title>uiRODS</title>
+	<style>body{font-family:arial,helvetica,sans-serif;}.cwd{background:#efefef;color:#777;padding:.2em .4em;}</style>
+	</head><body><h1>uiRODS</h1>`
+	footerHtml = "</body></html>"
+
+	cwd string
+	cnt int
 )
 
 func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
+	// Output the header
+	fmt.Fprint(w, headerHtml)
 
-	fmt.Fprint(w, "<h1>uiRODS</h1>")
-
-	targetFolder := strings.Replace(r.URL.RequestURI(), "/irods", "", 1)
-
+	// Change iRODS current folder to the requested path, using the icd command
+	targetFolder := strings.Replace(r.URL.RequestURI(), iRodsHandlerBasePath, "", 1)
 	cmd := exec.Command("icd", targetFolder)
 	err := cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Execute the ils command, and iterate over the iput on the linesOut channel
 	cmdIn := make(chan string, 0)
 	linesOut := make(chan []byte, 16)
-
 	glow.NewCommandExecutor(cmdIn, linesOut)
 	cmdIn <- "ils"
-
-	cnt := 0
-	cwd := ""
+	cnt = 0
 	for line := range linesOut {
 		var isFolder bool
 		line := string(line)
@@ -62,19 +77,21 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			cwd = strings.Replace(line, ":", "", 1)
-			fmt.Fprint(w, "<p>Current folder: ", cwd, "</p>")
+			fmt.Fprint(w, "<p class=\"cwd\">Current folder: ", cwd, "</p>")
 			fmt.Fprint(w, "<p><a href=\"/irods", strings.Join(pathParts[:len(pathParts)-1], "/"), "\">Parent folder</a></p>")
 			fmt.Fprint(w, "<ul>")
 		}
 		cnt++
 	}
 	fmt.Fprint(w, "</ul>")
+	fmt.Fprint(w, footerHtml)
 }
 
 func main() {
-
-	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(physicalMntPath))))
-	http.HandleFunc("/irods/", irodsPathHandler)
+	http.Handle(filesHandlerBasePath, http.StripPrefix("/files/", http.FileServer(http.Dir(physicalMntPath))))
+	http.HandleFunc(iRodsHandlerBasePath, irodsPathHandler)
 	http.HandleFunc("/", irodsPathHandler)
-	http.ListenAndServe(":9595", nil)
+
+	bind := fmt.Sprintf("%s:%d", *host, *port)
+	http.ListenAndServe(bind, nil)
 }
