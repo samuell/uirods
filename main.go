@@ -20,8 +20,8 @@ var (
 	port = flag.Int("p", 8080, "HTTP Listening port")
 	host = flag.String("h", "localhost", "HTTP Listening host")
 
-	physicalMntPath = os.Getenv("IRODSMNT_PHYSPATH")
-	irodsMntPath    = os.Getenv("IRODSMNT_IRODSPATH")
+	filesMntPath = os.Getenv("IRODSMNT_FILESPATH")
+	irodsMntPath = os.Getenv("IRODSMNT_IRODSPATH")
 
 	headerHtml = `<html><head><title>uiRODS</title>
 	<style>body{font-family:arial,helvetica,sans-serif;}.cwd{background:#efefef;color:#777;padding:.2em .4em;}</style>
@@ -64,7 +64,7 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 		if cnt > 0 {
 			fileName := pathParts[len(pathParts)-1]
 			if isFolder {
-				fmt.Fprint(w, "<li><a href=\"/irods", string(line), "\">", string(fileName), "</a></li>")
+				fmt.Fprint(w, "<li><a href=\"", iRodsHandlerBasePath, string(line), "\">", string(fileName), "</a></li>")
 			} else {
 				line = strings.Replace(line, " ", "", 1)
 				var cwdLocal string
@@ -73,12 +73,12 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 				} else {
 					cwdLocal = strings.Replace(cwd, irodsMntPath, "", 1)
 				}
-				fmt.Fprint(w, "<li><a href=\"/files/", cwdLocal, "/", line, "\">", string(fileName), "</a></li>")
+				fmt.Fprint(w, "<li><a href=\"", filesHandlerBasePath, "/", cwdLocal, "/", line, "\">", string(fileName), "</a></li>")
 			}
 		} else {
 			cwd = strings.Replace(line, ":", "", 1)
 			fmt.Fprint(w, "<p class=\"cwd\">Current folder: ", cwd, "</p>")
-			fmt.Fprint(w, "<p><a href=\"/irods", strings.Join(pathParts[:len(pathParts)-1], "/"), "\">Parent folder</a></p>")
+			fmt.Fprint(w, "<p><a href=\"", iRodsHandlerBasePath, strings.Join(pathParts[:len(pathParts)-1], "/"), "\">Parent folder</a></p>")
 			fmt.Fprint(w, "<ul>")
 		}
 		cnt++
@@ -88,7 +88,7 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.Handle(filesHandlerBasePath, http.StripPrefix("/files/", http.FileServer(http.Dir(physicalMntPath))))
+	http.Handle(filesHandlerBasePath, http.StripPrefix(filesHandlerBasePath, http.FileServer(http.Dir(filesMntPath))))
 	http.HandleFunc(iRodsHandlerBasePath, irodsPathHandler)
 	http.HandleFunc("/", irodsPathHandler)
 
