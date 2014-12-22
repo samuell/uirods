@@ -1,16 +1,18 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/samuell/glow"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 )
 
 func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
+	irodsMntPath := os.Getenv("IRODSMNT_IRODSPATH")
+
 	fmt.Fprint(w, "<h1>uiRODS</h1>")
 
 	targetFolder := strings.Replace(r.URL.RequestURI(), "/irods", "", 1)
@@ -28,15 +30,36 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 	cmdIn <- "ils"
 
 	cnt := 0
+	cwd := ""
 	for line := range linesOut {
-		line := bytes.Replace(line, []byte("  C- "), []byte(""), 1)
-		pathParts := bytes.Split(line, []byte("/"))
-		if cnt > 0 {
-			folderName := pathParts[len(pathParts)-1]
-			fmt.Fprint(w, "<li><a href=\"/irods", string(line), "\">", string(folderName), "</a></li>")
+		var isFolder bool
+		line := string(line)
+		if strings.Contains(line, "  C- ") {
+			line = strings.Replace(line, "  C- ", "", 1)
+			isFolder = true
 		} else {
-			fmt.Fprint(w, "<p>Current folder: ", string(line), "</p>")
-			fmt.Fprint(w, "<p><a href=\"/irods", string(bytes.Join(pathParts[:len(pathParts)-1], []byte("/"))), "\">Parent folder</a></p>")
+			line = strings.Replace(line, " ", "", 1)
+			isFolder = false
+		}
+		pathParts := strings.Split(line, "/")
+		if cnt > 0 {
+			fileName := pathParts[len(pathParts)-1]
+			if isFolder {
+				fmt.Fprint(w, "<li><a href=\"/irods", string(line), "\">", string(fileName), "</a></li>")
+			} else {
+				line = strings.Replace(line, " ", "", 1)
+				var cwdLocal string
+				if cwd == "/" {
+					cwdLocal = cwd
+				} else {
+					cwdLocal = strings.Replace(cwd, irodsMntPath, "", 1)
+				}
+				fmt.Fprint(w, "<li><a href=\"/files/", cwdLocal, "/", line, "\">", string(fileName), "</a></li>")
+			}
+		} else {
+			cwd = strings.Replace(line, ":", "", 1)
+			fmt.Fprint(w, "<p>Current folder: ", cwd, "</p>")
+			fmt.Fprint(w, "<p><a href=\"/irods", strings.Join(pathParts[:len(pathParts)-1], "/"), "\">Parent folder</a></p>")
 			fmt.Fprint(w, "<ul>")
 		}
 		cnt++
@@ -45,10 +68,10 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Handle iRODS paths (for showing metadata etc)
+	physicalMntPath := os.Getenv("IRODSMNT_PHYSPATH")
+
+	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(physicalMntPath))))
 	http.HandleFunc("/irods/", irodsPathHandler)
-	// Handle file system paths
-	http.Handle("/", http.FileServer(http.Dir(".")))
-	// Serve on port 8080
-	http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/", irodsPathHandler)
+	http.ListenAndServe(":9595", nil)
 }
