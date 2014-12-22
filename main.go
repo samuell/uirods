@@ -10,8 +10,12 @@ import (
 	"strings"
 )
 
+var (
+	physicalMntPath = os.Getenv("IRODSMNT_PHYSPATH")
+	irodsMntPath    = os.Getenv("IRODSMNT_IRODSPATH")
+)
+
 func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
-	irodsMntPath := os.Getenv("IRODSMNT_IRODSPATH")
 
 	fmt.Fprint(w, "<h1>uiRODS</h1>")
 
@@ -68,7 +72,6 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	physicalMntPath := os.Getenv("IRODSMNT_PHYSPATH")
 
 	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(physicalMntPath))))
 	http.HandleFunc("/irods/", irodsPathHandler)
