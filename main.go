@@ -88,10 +88,13 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	flag.Parse()
+
 	http.Handle(filesHandlerBasePath, http.StripPrefix(filesHandlerBasePath, http.FileServer(http.Dir(filesMntPath))))
 	http.HandleFunc(iRodsHandlerBasePath, irodsPathHandler)
 	http.HandleFunc("/", irodsPathHandler)
 
 	bind := fmt.Sprintf("%s:%d", *host, *port)
-	http.ListenAndServe(bind, nil)
+	log.Printf("Listening on http://%v", bind)
+	log.Fatal("FATAL: %v", http.ListenAndServe(bind, nil))
 }
