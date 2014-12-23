@@ -14,6 +14,7 @@ uiRODS - Simple Web UI for iRODS
 ## Prerequisites
 
 * Go 1.x
+* The iRODS icommands package relevant to your linux distribution, available [here](http://irods.org/download/), further down on the page.
 * A properly configured ```$GOPATH``` environment variable
 * The iRODS FUSE module (comes installed, with the icommands .deb package from irods.org)
 
