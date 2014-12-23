@@ -21,7 +21,7 @@ go build github.com/samuell/uirods
 ````
 Run:
 ````bash
-./uirods -p <portno>
+./uirods -p PORTNUMBER
 ````
-Now surf in to http://localhost:<portno> in your browser!
+Now surf in to http://localhost:PORTNUMBER in your browser!
 
