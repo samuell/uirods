@@ -3,7 +3,7 @@ uiRODS - Simple Web UI for iRODS
 
 ![uiRODS Screenshot](uirods_screenshot.png?raw=true)
 
-# Prerequisit
+# Prerequisites
 
 * Go 1.x
 * A properly configured $GOPATH environment variable
