@@ -15,14 +15,16 @@ uiRODS - Simple Web UI for iRODS
 
 # Installation
 
-1. Get the code: ````bash
-go get github.com/samuell/uirods
-````
-2. Build it in some suitable folder, eg: ````bash
-mkdir -p ~/opt/uirods
-cd ~/opt/uirods
-go build github.com/samuell/uirods
-````
+1. Get the code: 
+  ````bash
+  go get github.com/samuell/uirods
+  ````
+2. Build it in some suitable folder, eg: 
+  ````bash
+  mkdir -p ~/opt/uirods
+  cd ~/opt/uirods
+  go build github.com/samuell/uirods
+  ````
 3. Mount an irods folder in a local folder, using iRODS FUSE:
 ````bash
 mkdir -p ~/mnt/irods # Create a local folder where to mount
