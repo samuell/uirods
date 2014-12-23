@@ -3,17 +3,21 @@ uiRODS - Simple Web UI for iRODS
 
 ![uiRODS Screenshot](uirods_screenshot.png?raw=true)
 
-# Disclaimer
+## Features
+* Enables browsing of the iRODS directory tree.
+* Serves the content of files directly, through a configurable iRODS FUSE mounted folder.
+
+## Disclaimer
 * This code is highly untested, and almost guaranteed to be totally screamingly unsecure by all measures!
 * Go on using it on your own sole risk only!
 
-# Prerequisites
+## Prerequisites
 
 * Go 1.x
 * A properly configured ```$GOPATH``` environment variable
 * The iRODS FUSE module (comes installed, with the icommands .deb package from irods.org)
 
-# Installation
+## Installation
 
 * Get the code: 
 ````bash
