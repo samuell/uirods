@@ -4,7 +4,7 @@ uiRODS - Simple Web UI for iRODS
 ![uiRODS Screenshot](uirods_screenshot.png?raw=true)
 
 # Disclaimer
-* This code is highly untested, and probably totally screamingly unsecure by all measures!
+* This code is highly untested, and almost guaranteed to be totally screamingly unsecure by all measures!
 * Go on using it on your own sole risk only!
 
 # Prerequisites
@@ -15,12 +15,10 @@ uiRODS - Simple Web UI for iRODS
 
 # Installation
 
-1. Get the code:
-````bash
+1. Get the code: ````bash
 go get github.com/samuell/uirods
 ````
-2. Build it in some suitable folder, eg:
-````bash
+2. Build it in some suitable folder, eg: ````bash
 mkdir -p ~/opt/uirods
 cd ~/opt/uirods
 go build github.com/samuell/uirods
