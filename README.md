@@ -25,16 +25,16 @@ go build github.com/samuell/uirods
 
 3. Mount an irods folder in a local folder, using iRODS FUSE:
 ````bash
-mkdir -p ~/mnt/irods
-iinit
-icd /
-irodsFs ~/mnt/irods
+mkdir -p ~/mnt/irods # Create a local folder where to mount
+iinit                # Make sure that your iRODS settings are initialized
+icd /                # Change directory to some iRODS folder you want to mount
+irodsFs ~/mnt/irods  # Mount the currend folder in iRODS, onto specified folder
 ````
 
 4. Set up some environmental variables (add this to your ```~/.bashrc``` or ```~/.bash_profile``` to make it last longer than the current bash session):
 ````bash
-export IRODSMNT_FILESPATH='~/mnt/irods'
-export IRODSMNT_IRODSPATH='/' # If you did icd / above, before mounting!
+export IRODSMNT_FILESPATH='~/mnt/irods' # Your local iRODS FUSE mountpoint
+export IRODSMNT_IRODSPATH='/'           # The iRODS path that you mounted
 ````
 
 5. Start the web server:
