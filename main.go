@@ -32,6 +32,12 @@ var (
 	cnt int
 )
 
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, headerHtml)
+	fmt.Fprint(w, "<ul><li><a href=\"", iRodsHandlerBasePath, "/tempZone\">Open uiRods browser</a></li></ul>")
+	fmt.Fprint(w, footerHtml)
+}
+
 func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 	// Output the header
 	fmt.Fprint(w, headerHtml)
@@ -90,9 +96,9 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 
-	http.Handle(filesHandlerBasePath, http.StripPrefix(filesHandlerBasePath, http.FileServer(http.Dir(filesMntPath))))
-	http.HandleFunc(iRodsHandlerBasePath, irodsPathHandler)
-	http.HandleFunc("/", irodsPathHandler)
+	http.Handle(filesHandlerBasePath+"/", http.StripPrefix(filesHandlerBasePath+"/", http.FileServer(http.Dir(filesMntPath))))
+	http.HandleFunc(iRodsHandlerBasePath+"/", irodsPathHandler)
+	http.HandleFunc("/", indexHandler)
 
 	bind := fmt.Sprintf("%s:%d", *host, *port)
 	log.Printf("Listening on http://%v", bind)
