@@ -14,6 +14,7 @@ import (
 const (
 	iRodsHandlerBasePath = "/irods"
 	fileServerBasePath   = "/files"
+	fileHandlerBasePath  = "/file"
 )
 
 var (
@@ -86,7 +87,7 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 				} else {
 					cwdLocal = strings.Replace(cwd, irodsMntPath, "", 1)
 				}
-				fmt.Fprint(w, "<li><a href=\"", fileServerBasePath, "/", cwdLocal, "/", line, "\">", string(fileName), "</a></li>")
+				fmt.Fprint(w, "<li><a href=\"", fileHandlerBasePath, "/", cwdLocal, "/", line, "\">", string(fileName), "</a></li>")
 			}
 		} else {
 			cwd = strings.Replace(line, ":", "", 1)
@@ -100,6 +101,13 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, footerHtml)
 }
 
+func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, headerHtml)
+	filePath := strings.Replace(r.URL.RequestURI(), fileHandlerBasePath, "", 1)
+	fmt.Fprint(w, "<ul><li>File: ", filePath, "</li></ul>")
+	fmt.Fprint(w, footerHtml)
+}
+
 // --------------------------------------------------------------------------------
 // Main function
 // --------------------------------------------------------------------------------
@@ -109,6 +117,7 @@ func main() {
 
 	http.Handle(fileServerBasePath+"/", http.StripPrefix(fileServerBasePath+"/", http.FileServer(http.Dir(filesMntPath))))
 	http.HandleFunc(iRodsHandlerBasePath+"/", irodsPathHandler)
+	http.HandleFunc(fileHandlerBasePath+"/", irodsFileHandler)
 	http.HandleFunc("/", indexHandler)
 
 	bind := fmt.Sprintf("%s:%d", *host, *port)
