@@ -104,7 +104,7 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, headerHtml)
 	filePath := strings.Replace(r.URL.RequestURI(), fileHandlerBasePath, "", 1)
-	fmt.Fprint(w, "<ul><li>File: ", filePath, "</li></ul>")
+	fmt.Fprint(w, "<p class=\"cwd\">Current file: ", filePath, "</p>")
 	fmt.Fprint(w, footerHtml)
 }
 
