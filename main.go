@@ -48,8 +48,10 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Change iRODS current folder to the requested path, using the icd command
 	targetFolder := strings.Replace(r.URL.RequestURI(), iRodsHandlerBasePath, "", 1)
-	cmd := exec.Command("icd", targetFolder)
-	//fmt.Println("Now executing command: ", "icd ", targetFolder)
+	cmdBinary := "icd"
+	cmdParams := targetFolder
+	cmd := exec.Command(cmdBinary, cmdParams)
+	//fmt.Println("Now executing command: ", cmdBinary, " ", cmdParams)
 	err := cmd.Run()
 	if err != nil {
 		log.Fatal("Error when executing command 'icd ", targetFolder, "': ", err)
