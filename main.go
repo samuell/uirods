@@ -91,7 +91,9 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 		if cnt > 0 {
 			fileName := pathParts[len(pathParts)-1]
 			if isFolder {
-				fmt.Fprint(w, "<li><a href=\"", iRodsHandlerBasePath, string(line), "\">", string(fileName), "</a></li>")
+				if fileName != "" {
+					fmt.Fprint(w, "<li><a href=\"", iRodsHandlerBasePath, line, "\">", fileName, "</a></li>")
+				}
 			} else {
 				line = strings.Replace(line, " ", "", 1)
 				var cwdLocal string
