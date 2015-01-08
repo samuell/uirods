@@ -37,12 +37,16 @@ var (
 // Handlers
 // --------------------------------------------------------------------------------
 
+// Handle the root url / index page.
+// Show a link to start browsing the iRODS folder tree.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, headerHtml)
 	fmt.Fprint(w, "<ul><li><a href=\"", iRodsHandlerBasePath, "/tempZone\">Open uiRods browser</a></li></ul>")
 	fmt.Fprint(w, footerHtml)
 }
 
+// Handle URLs representing iRODS folder paths
+// Show links for navigating in the folder tree.
 func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 	// Output the header
 	fmt.Fprint(w, headerHtml)
@@ -101,6 +105,8 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, footerHtml)
 }
 
+// Handle URLS representing iRODS file paths.
+// Show metadata and download link (TODO)
 func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, headerHtml)
 	filePath := strings.Replace(r.URL.RequestURI(), fileHandlerBasePath, "", 1)
