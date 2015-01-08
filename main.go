@@ -50,7 +50,7 @@ var (
 // Show a link to start browsing the iRODS folder tree.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, headerHtml)
-	fmt.Fprint(w, "<ul><li><a href=\"", iRodsHandlerBasePath, "/tempZone\">Open uiRods browser</a></li></ul>")
+	fmt.Fprintf(w, "<ul><li><a href=\"%s/tempZone\">Open uiRods browser</a></li></ul>", iRodsHandlerBasePath)
 	fmt.Fprint(w, footerHtml)
 }
 
@@ -65,10 +65,9 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 	cmdBinary := "icd"
 	cmdParams := targetFolder
 	cmd := exec.Command(cmdBinary, cmdParams)
-	//fmt.Println("Now executing command: ", cmdBinary, " ", cmdParams)
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal("Error when executing command 'icd ", targetFolder, "': ", err)
+		log.Fatalf("Error when executing command 'icd %s': %s", targetFolder, err)
 	}
 
 	// Execute the ils command, and iterate over the iput on the linesOut channel
@@ -77,19 +76,43 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 	glow.NewCommandExecutor(cmdIn, linesOut)
 	cmdIn <- "ils"
 	cnt = 0
+
+	// Loop over lines in output from ils
 	for line := range linesOut {
 		var isFolder bool
 		line := string(line)
-		if strings.Contains(line, "  C- ") {
+
+		// Check if current line represents a folder or file
+		if strings.Contains(line, "  C- ") { // "C-" designates folders in ils output
 			line = strings.Replace(line, "  C- ", "", 1)
 			isFolder = true
 		} else {
 			line = strings.Replace(line, " ", "", 1)
 			isFolder = false
 		}
+
 		pathParts := strings.Split(line, "/")
-		if cnt > 0 {
+
+		if cnt == 0 {
+			// For the first line, which does not contain any paths anyway,
+			// just rite some "introductory" HTML
+
+			// Write current working directory
+			cwd = strings.Replace(line, ":", "", 1)
+			fmt.Fprint(w, "<p class=\"cwd\">Current folder: ", cwd, "</p>")
+
+			// Write parent folder link
+			parentFolderPath := strings.Join(pathParts[:len(pathParts)-1], "/")
+			fmt.Fprintf(w, "<p><a href=\"%s%s\">&laquo; Parent folder</a></p>", iRodsHandlerBasePath, parentFolderPath)
+
+			// Start the file/folder list
+			fmt.Fprint(w, "<ul>")
+		} else {
+			// The rest of the ils output lines
+
 			fileName := pathParts[len(pathParts)-1]
+
+			// Print the actual folder / file links (as list items)
 			if isFolder {
 				if fileName != "" {
 					fmt.Fprint(w, "<li><a href=\"", iRodsHandlerBasePath, line, "\">", fileName, "</a></li>")
@@ -102,13 +125,8 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 				} else {
 					cwdLocal = strings.Replace(cwd, irodsMntPath, "", 1)
 				}
-				fmt.Fprint(w, "<li><a href=\"", fileHandlerBasePath, "/", cwdLocal, "/", line, "\">", string(fileName), "</a></li>")
+				fmt.Fprintf(w, "<li><a href=\"%s/%s/%s\">%s</a></li>", fileHandlerBasePath, cwdLocal, line, fileName)
 			}
-		} else {
-			cwd = strings.Replace(line, ":", "", 1)
-			fmt.Fprint(w, "<p class=\"cwd\">Current folder: ", cwd, "</p>")
-			fmt.Fprint(w, "<p><a href=\"", iRodsHandlerBasePath, strings.Join(pathParts[:len(pathParts)-1], "/"), "\">&laquo; Parent folder</a></p>")
-			fmt.Fprint(w, "<ul>")
 		}
 		cnt++
 	}
@@ -120,11 +138,19 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 // Show metadata and download link
 func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, headerHtml)
+
+	// Extract the iRODS file path from the URL
 	filePath := strings.Replace(r.URL.RequestURI(), fileHandlerBasePath, "", 1)
 	fileParts := strings.Split(filePath, "/")
 	parentFolderPath := strings.Join(fileParts[:len(fileParts)-1], "/")
-	fmt.Fprint(w, "<p class=\"cwd\">Current file: ", filePath, "</p>")
+
+	// Print HTML content for presenting the file
+	fmt.Fprintf(w, "<p class=\"cwd\">Current file: %s</p>", filePath)
 	fmt.Fprintf(w, "<p><a href=\"%s/%s\">&laquo; Parent folder</a></p>", iRodsHandlerBasePath, parentFolderPath)
+	fmt.Fprint(w, "<h4>Download file</h4>")
+	fmt.Fprintf(w, "<ul><li><a href=\"%s/%s\">%s</a></li></ul>", fileServerBasePath, filePath, filePath)
+	fmt.Fprint(w, "<h4>Metadata</h4>")
+	fmt.Fprint(w, "<table><tr><th>Attribute</th><th>Value</th><th>Units</th></tr>")
 
 	// Get the metadata about the current file
 	cmdOut, cmdErr := exec.Command("imeta", "ls", "-d", filePath).Output()
@@ -134,38 +160,39 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	cmdLines := strings.Split(string(cmdOut), "\n")
 	metaLines := cmdLines[1:]
 	metaStr := strings.Join(metaLines, "\n")
-	metaChunks := strings.Split(metaStr, "----")
-	fmt.Fprint(w, "<h4>Download file</h4>")
-	fmt.Fprintf(w, "<ul><li><a href=\"%s/%s\">%s</a></li></ul>", fileServerBasePath, filePath, filePath)
-	fmt.Fprint(w, "<h4>Metadata</h4>")
-	fmt.Fprint(w, "<table><tr><th>Attribute</th><th>Value</th><th>Units</th></tr>")
 
-	// Loop over meta data "triplets"
+	// Split meta data triplets into chunks, with one triplet in each chunk
+	metaChunks := strings.Split(metaStr, "----")
+	// Loop over meta data "triplets" or "chunks"
 	for _, metaChunk := range metaChunks {
 		var attr, value, units string
+
+		// Extract attribute [name]
 		patEnd := ": ([a-zA-Z0-9]+)"
 		attrPat, _ := regexp.Compile("attribute" + patEnd)
 		attrArr := attrPat.FindStringSubmatch(metaChunk)
 		if len(attrArr) > 0 {
 			attr = attrArr[1]
 		}
+
+		// Extract value
 		valuePat, _ := regexp.Compile("value" + patEnd)
 		valueArr := valuePat.FindStringSubmatch(metaChunk)
 		if len(valueArr) > 0 {
 			value = valueArr[1]
 		}
+
+		// Extract units string
 		unitPat, _ := regexp.Compile("units" + patEnd)
 		unitsArr := unitPat.FindStringSubmatch(metaChunk)
 		if len(unitsArr) > 0 {
 			units = unitsArr[1]
 		}
+
+		// Print a table row with attribute name, value and units
 		fmt.Fprintf(w, "<tr style=\"border-bottom: 1px solid grey;\"><td>%s</td><td>%s</td><td>%s</td></tr>", attr, value, units)
 	}
 	fmt.Fprint(w, "</table>")
-	//for _, cmdLine := range metaLines {
-	//	fmt.Fprint(w, cmdLine+"\n")
-	//}
-	//fmt.Fprint(w, string(cmdOut))
 	fmt.Fprint(w, footerHtml)
 }
 
