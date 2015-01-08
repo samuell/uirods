@@ -25,12 +25,17 @@ var (
 	filesMntPath = os.Getenv("IRODSMNT_FILESPATH")
 	irodsMntPath = os.Getenv("IRODSMNT_IRODSPATH")
 
-	headerHtml = `<html><head><title>uiRODS</title>
-	<style>body{font-family:arial,helvetica,sans-serif;}
+	headerHtml = `<html>
+	<head>
+	<title>uiRODS</title>
+	<style>
+	body{font-family:arial,helvetica,sans-serif;}
 	.cwd{background:#efefef;color:#777;padding:.2em .4em;}
-	table th, table td {border-width: 1px 0 0 1px; border-style: dotted; border-color: #ccc; padding: .4em .7em;}
+	table th,table td{border-width: 1px 0 0 1px;border-style: dotted;border-color: #ccc;padding: .4em .7em;}
 	</style>
-	</head><body><h1>uiRODS</h1>`
+	</head>
+	<body>
+	<h1>uiRODS</h1>`
 	footerHtml = "</body></html>"
 
 	cwd string
