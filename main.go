@@ -143,7 +143,7 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 		if len(unitsArr) > 0 {
 			units = unitsArr[1]
 		}
-		fmt.Fprint(w, "<tr style=\"border-bottom: 1px solid grey;\"><td>", attr, "</td><td>", value, "</td><td>", units, "</td></tr>")
+		fmt.Fprintf(w, "<tr style=\"border-bottom: 1px solid grey;\"><td>%s</td><td>%s</td><td>%s</td></tr>", attr, value, units)
 	}
 	fmt.Fprint(w, "</table>")
 	//for _, cmdLine := range metaLines {
