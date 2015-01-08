@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -25,7 +26,10 @@ var (
 	irodsMntPath = os.Getenv("IRODSMNT_IRODSPATH")
 
 	headerHtml = `<html><head><title>uiRODS</title>
-	<style>body{font-family:arial,helvetica,sans-serif;}.cwd{background:#efefef;color:#777;padding:.2em .4em;}</style>
+	<style>body{font-family:arial,helvetica,sans-serif;}
+	.cwd{background:#efefef;color:#777;padding:.2em .4em;}
+	table th, table td {border-width: 1px 0 0 1px; border-style: dotted; border-color: #ccc; padding: .4em .7em;}
+	</style>
 	</head><body><h1>uiRODS</h1>`
 	footerHtml = "</body></html>"
 
@@ -112,18 +116,40 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	filePath := strings.Replace(r.URL.RequestURI(), fileHandlerBasePath, "", 1)
 	fmt.Fprint(w, "<p class=\"cwd\">Current file: ", filePath, "</p>")
 	// Get the metadata about the current file
-	fmt.Fprint(w, "<pre>")
 	cmdOut, cmdErr := exec.Command("imeta", "ls", "-d", filePath).Output()
 	if cmdErr != nil {
 		log.Fatal("Failed executing imeta command for ", filePath, ": ", cmdErr)
 	}
 	cmdLines := strings.Split(string(cmdOut), "\n")
 	metaLines := cmdLines[1:]
-	for _, cmdLine := range metaLines {
-		fmt.Fprint(w, cmdLine+"\n")
+	metaStr := strings.Join(metaLines, "\n")
+	metaChunks := strings.Split(metaStr, "----")
+	fmt.Fprint(w, "<table><tr><th>Attribute</th><th>Value</th><th>Units</th></tr>")
+	for _, metaChunk := range metaChunks {
+		var attr, value, units string
+		patEnd := ": ([a-zA-Z0-9]+)"
+		attrPat, _ := regexp.Compile("attribute" + patEnd)
+		attrArr := attrPat.FindStringSubmatch(metaChunk)
+		if len(attrArr) > 0 {
+			attr = attrArr[1]
+		}
+		valuePat, _ := regexp.Compile("value" + patEnd)
+		valueArr := valuePat.FindStringSubmatch(metaChunk)
+		if len(valueArr) > 0 {
+			value = valueArr[1]
+		}
+		unitPat, _ := regexp.Compile("units" + patEnd)
+		unitsArr := unitPat.FindStringSubmatch(metaChunk)
+		if len(unitsArr) > 0 {
+			units = unitsArr[1]
+		}
+		fmt.Fprint(w, "<tr style=\"border-bottom: 1px solid grey;\"><td>", attr, "</td><td>", value, "</td><td>", units, "</td></tr>")
 	}
+	fmt.Fprint(w, "</table>")
+	//for _, cmdLine := range metaLines {
+	//	fmt.Fprint(w, cmdLine+"\n")
+	//}
 	//fmt.Fprint(w, string(cmdOut))
-	fmt.Fprint(w, "</pre>")
 	fmt.Fprint(w, footerHtml)
 }
 
