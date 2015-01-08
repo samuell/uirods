@@ -100,7 +100,7 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			cwd = strings.Replace(line, ":", "", 1)
 			fmt.Fprint(w, "<p class=\"cwd\">Current folder: ", cwd, "</p>")
-			fmt.Fprint(w, "<p><a href=\"", iRodsHandlerBasePath, strings.Join(pathParts[:len(pathParts)-1], "/"), "\">Parent folder</a></p>")
+			fmt.Fprint(w, "<p><a href=\"", iRodsHandlerBasePath, strings.Join(pathParts[:len(pathParts)-1], "/"), "\">&laquo; Parent folder</a></p>")
 			fmt.Fprint(w, "<ul>")
 		}
 		cnt++
@@ -110,11 +110,15 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handle URLS representing iRODS file paths.
-// Show metadata and download link (TODO)
+// Show metadata and download link
 func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, headerHtml)
 	filePath := strings.Replace(r.URL.RequestURI(), fileHandlerBasePath, "", 1)
+	fileParts := strings.Split(filePath, "/")
+	parentFolderPath := strings.Join(fileParts[:len(fileParts)-1], "/")
 	fmt.Fprint(w, "<p class=\"cwd\">Current file: ", filePath, "</p>")
+	fmt.Fprintf(w, "<p><a href=\"%s/%s\">&laquo; Parent folder</a></p>", iRodsHandlerBasePath, parentFolderPath)
+
 	// Get the metadata about the current file
 	cmdOut, cmdErr := exec.Command("imeta", "ls", "-d", filePath).Output()
 	if cmdErr != nil {
@@ -124,7 +128,12 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	metaLines := cmdLines[1:]
 	metaStr := strings.Join(metaLines, "\n")
 	metaChunks := strings.Split(metaStr, "----")
+	fmt.Fprint(w, "<h4>Download file</h4>")
+	fmt.Fprintf(w, "<ul><li><a href=\"%s/%s\">%s</a></li></ul>", fileServerBasePath, filePath, filePath)
+	fmt.Fprint(w, "<h4>Metadata</h4>")
 	fmt.Fprint(w, "<table><tr><th>Attribute</th><th>Value</th><th>Units</th></tr>")
+
+	// Loop over meta data "triplets"
 	for _, metaChunk := range metaChunks {
 		var attr, value, units string
 		patEnd := ": ([a-zA-Z0-9]+)"
@@ -159,6 +168,8 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	flag.Parse()
+
+	fmt.Printf("Starting, assuming iRODS folder %s is mounted at %s ...\n", irodsMntPath, filesMntPath)
 
 	http.Handle(fileServerBasePath+"/", http.StripPrefix(fileServerBasePath+"/", http.FileServer(http.Dir(filesMntPath))))
 	http.HandleFunc(iRodsHandlerBasePath+"/", irodsPathHandler)
