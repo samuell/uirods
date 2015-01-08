@@ -105,17 +105,19 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, headerHtml)
 	filePath := strings.Replace(r.URL.RequestURI(), fileHandlerBasePath, "", 1)
 	fmt.Fprint(w, "<p class=\"cwd\">Current file: ", filePath, "</p>")
-	// Execute the ils command, and iterate over the iput on the linesOut channel
-	cmdIn := make(chan string, 0)
-	linesOut := make(chan []byte, 16)
-	glow.NewCommandExecutor(cmdIn, linesOut)
+	// Get the metadata about the current file
 	fmt.Fprint(w, "<pre>")
-	cmdIn <- "imeta ls -d " + filePath
-	for line := range linesOut {
-		fmt.Fprint(w, string(line)+"\n")
+	cmdOut, cmdErr := exec.Command("imeta", "ls", "-d", filePath).Output()
+	if cmdErr != nil {
+		log.Fatal("Failed executing imeta command for ", filePath, ": ", cmdErr)
 	}
+	cmdLines := strings.Split(string(cmdOut), "\n")
+	metaLines := cmdLines[1:len(cmdLines)]
+	for _, cmdLine := range metaLines {
+		fmt.Fprint(w, cmdLine+"\n")
+	}
+	//fmt.Fprint(w, string(cmdOut))
 	fmt.Fprint(w, "</pre>")
-
 	fmt.Fprint(w, footerHtml)
 }
 
