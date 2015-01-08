@@ -118,7 +118,7 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Failed executing imeta command for ", filePath, ": ", cmdErr)
 	}
 	cmdLines := strings.Split(string(cmdOut), "\n")
-	metaLines := cmdLines[1:len(cmdLines)]
+	metaLines := cmdLines[1:]
 	for _, cmdLine := range metaLines {
 		fmt.Fprint(w, cmdLine+"\n")
 	}
