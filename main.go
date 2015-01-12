@@ -43,6 +43,25 @@ var (
 )
 
 // --------------------------------------------------------------------------------
+// Main function
+// --------------------------------------------------------------------------------
+
+func main() {
+	flag.Parse()
+
+	fmt.Printf("Starting, assuming iRODS folder %s is mounted at %s ...\n", irodsMntPath, filesMntPath)
+
+	http.Handle(fileServerBasePath+"/", http.StripPrefix(fileServerBasePath+"/", http.FileServer(http.Dir(filesMntPath))))
+	http.HandleFunc(iRodsHandlerBasePath+"/", irodsPathHandler)
+	http.HandleFunc(fileHandlerBasePath+"/", irodsFileHandler)
+	http.HandleFunc("/", indexHandler)
+
+	bind := fmt.Sprintf("%s:%d", *host, *port)
+	log.Printf("Listening on http://%v", bind)
+	log.Fatal("FATAL: %v", http.ListenAndServe(bind, nil))
+}
+
+// --------------------------------------------------------------------------------
 // Handlers
 // --------------------------------------------------------------------------------
 
@@ -137,6 +156,7 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 // Handle URLS representing iRODS file paths.
 // Show metadata and download link
 func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
+
 	fmt.Fprint(w, headerHtml)
 
 	// Extract the iRODS file path from the URL
@@ -168,26 +188,9 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 		var attr, value, units string
 
 		// Extract attribute [name]
-		patEnd := ": ([a-zA-Z0-9]+)"
-		attrPat, _ := regexp.Compile("attribute" + patEnd)
-		attrArr := attrPat.FindStringSubmatch(metaChunk)
-		if len(attrArr) > 0 {
-			attr = attrArr[1]
-		}
-
-		// Extract value
-		valuePat, _ := regexp.Compile("value" + patEnd)
-		valueArr := valuePat.FindStringSubmatch(metaChunk)
-		if len(valueArr) > 0 {
-			value = valueArr[1]
-		}
-
-		// Extract units string
-		unitPat, _ := regexp.Compile("units" + patEnd)
-		unitsArr := unitPat.FindStringSubmatch(metaChunk)
-		if len(unitsArr) > 0 {
-			units = unitsArr[1]
-		}
+		attr = getMetaDataFieldValue("attribute", metaChunk)
+		value = getMetaDataFieldValue("value", metaChunk)
+		units = getMetaDataFieldValue("units", metaChunk)
 
 		// Print a table row with attribute name, value and units
 		fmt.Fprintf(w, "<tr style=\"border-bottom: 1px solid grey;\"><td>%s</td><td>%s</td><td>%s</td></tr>", attr, value, units)
@@ -197,20 +200,15 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // --------------------------------------------------------------------------------
-// Main function
+// Helper functions
 // --------------------------------------------------------------------------------
 
-func main() {
-	flag.Parse()
-
-	fmt.Printf("Starting, assuming iRODS folder %s is mounted at %s ...\n", irodsMntPath, filesMntPath)
-
-	http.Handle(fileServerBasePath+"/", http.StripPrefix(fileServerBasePath+"/", http.FileServer(http.Dir(filesMntPath))))
-	http.HandleFunc(iRodsHandlerBasePath+"/", irodsPathHandler)
-	http.HandleFunc(fileHandlerBasePath+"/", irodsFileHandler)
-	http.HandleFunc("/", indexHandler)
-
-	bind := fmt.Sprintf("%s:%d", *host, *port)
-	log.Printf("Listening on http://%v", bind)
-	log.Fatal("FATAL: %v", http.ListenAndServe(bind, nil))
+func getMetaDataFieldValue(fieldName string, metaData string) string {
+	var value string
+	pat, _ := regexp.Compile(fieldName + ": ([a-zA-Z0-9]+)")
+	matches := pat.FindStringSubmatch(metaData)
+	if len(matches) > 0 {
+		value = matches[1]
+	}
+	return value
 }
