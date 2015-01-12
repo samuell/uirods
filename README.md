@@ -5,6 +5,7 @@ uiRODS - Simple Web UI for iRODS
 
 ## Features
 * Enables browsing of the [iRODS](http://irods.org) directory tree, with the privileges of the iRODS user authenticated under the system account that the web server is started as.
+* Enables vieweing of meta-data for individual files.
 * Serves the content of files directly, through a configurable iRODS FUSE mounted folder.
 
 ## Disclaimer
