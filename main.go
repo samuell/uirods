@@ -69,7 +69,7 @@ func main() {
 // Show a link to start browsing the iRODS folder tree.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, headerHtml)
-	fmt.Fprintf(w, "<ul><li><a href=\"%s/tempZone\">Open uiRods browser</a></li></ul>", iRodsHandlerBasePath)
+	fmt.Fprintf(w, ul(li("<a href=\"%s/tempZone\">Open uiRods browser</a>")), iRodsHandlerBasePath)
 	fmt.Fprint(w, footerHtml)
 }
 
@@ -122,7 +122,7 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 
 			// Write parent folder link
 			parentFolderPath := strings.Join(pathParts[:len(pathParts)-1], "/")
-			fmt.Fprintf(w, "<p><a href=\"%s%s\">&laquo; Parent folder</a></p>", iRodsHandlerBasePath, parentFolderPath)
+			fmt.Fprintf(w, p("<a href=\"%s%s\">&laquo; Parent folder</a>"), iRodsHandlerBasePath, parentFolderPath)
 
 			// Start the file/folder list
 			fmt.Fprint(w, "<ul>")
@@ -226,4 +226,20 @@ func stripFolderMarker(line string) string {
 
 func stripFirstSpace(line string) string {
 	return strings.Replace(line, " ", "", 1)
+}
+
+func tag(tag string, text string) string {
+	return fmt.Sprintf("<%s>%s</%s>", tag, text, tag)
+}
+
+func p(s string) string {
+	return tag("p", s)
+}
+
+func ul(s string) string {
+	return tag("ul", s)
+}
+
+func li(s string) string {
+	return tag("li", s)
 }
