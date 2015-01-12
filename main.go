@@ -102,11 +102,11 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 		line := string(line)
 
 		// Check if current line represents a folder or file
-		if strings.Contains(line, "  C- ") { // "C-" designates folders in ils output
-			line = strings.Replace(line, "  C- ", "", 1)
+		if representsFolder(line) { // "C-" designates folders in ils output
+			line = stripFolderMarker(line)
 			isFolder = true
 		} else {
-			line = strings.Replace(line, " ", "", 1)
+			line = stripFirstSpace(line)
 			isFolder = false
 		}
 
@@ -214,4 +214,16 @@ func stripFirstLine(str string) string {
 	newLines := lines[1:]
 	newText := strings.Join(newLines, "\n")
 	return newText
+}
+
+func representsFolder(line string) bool {
+	return strings.Contains(line, "  C- ")
+}
+
+func stripFolderMarker(line string) string {
+	return strings.Replace(line, "  C- ", "", 1)
+}
+
+func stripFirstSpace(line string) string {
+	return strings.Replace(line, " ", "", 1)
 }
