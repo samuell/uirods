@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/samuell/glow"
 	"log"
 	"net/http"
 	"os"
@@ -76,30 +75,22 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 // Handle URLs representing iRODS folder paths
 // Show links for navigating in the folder tree.
 func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
+	cnt = 0
+
 	// Output the header
 	fmt.Fprint(w, headerHtml)
 
 	// Change iRODS current folder to the requested path, using the icd command
 	targetFolder := strings.Replace(r.URL.RequestURI(), iRodsHandlerBasePath, "", 1)
-	cmdBinary := "icd"
-	cmdParams := targetFolder
-	cmd := exec.Command(cmdBinary, cmdParams)
-	err := cmd.Run()
-	if err != nil {
-		log.Fatalf("Error when executing command 'icd %s': %s", targetFolder, err)
-	}
+	execCmd("icd " + targetFolder)
 
 	// Execute the ils command, and iterate over the iput on the linesOut channel
-	cmdIn := make(chan string, 0)
-	linesOut := make(chan []byte, 16)
-	glow.NewCommandExecutor(cmdIn, linesOut)
-	cmdIn <- "ils"
-	cnt = 0
+	ilsOutput := execCmd("ils")
 
+	lines := strings.Split(ilsOutput, "\n")
 	// Loop over lines in output from ils
-	for line := range linesOut {
+	for _, line := range lines[:len(lines)-1] {
 		var isFolder bool
-		line := string(line)
 
 		// Check if current line represents a folder or file
 		if representsFolder(line) { // "C-" designates folders in ils output
@@ -173,10 +164,7 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<table><tr><th>Attribute</th><th>Value</th><th>Units</th></tr>")
 
 	// Get the metadata about the current file
-	cmdOut, cmdErr := exec.Command("imeta", "ls", "-d", filePath).Output()
-	if cmdErr != nil {
-		log.Fatal("Failed executing imeta command for ", filePath, ": ", cmdErr)
-	}
+	cmdOut := execCmd("imeta ls -d " + filePath)
 	metaStr := stripFirstLine(string(cmdOut))
 
 	// Split meta data triplets into chunks, with one triplet in each chunk
@@ -242,4 +230,24 @@ func ul(s string) string {
 
 func li(s string) string {
 	return tag("li", s)
+}
+
+func execCmd(cmdStr string) string {
+	var cmdOut []byte
+	var cmdErr error
+	cmdBits := strings.Split(cmdStr, " ")
+	cmdBinary := cmdBits[0]
+	if len(cmdBits) <= 1 {
+		cmdOut, cmdErr = exec.Command(cmdBinary).Output()
+		if cmdErr != nil {
+			log.Fatalf("Failed executing command '%s': %s")
+		}
+	} else {
+		cmdParams := cmdBits[1:]
+		cmdOut, cmdErr = exec.Command(cmdBinary, cmdParams...).Output()
+		if cmdErr != nil {
+			log.Fatalf("Failed executing command '%s': %s")
+		}
+	}
+	return string(cmdOut)
 }
