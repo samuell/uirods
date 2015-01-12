@@ -177,20 +177,16 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	if cmdErr != nil {
 		log.Fatal("Failed executing imeta command for ", filePath, ": ", cmdErr)
 	}
-	cmdLines := strings.Split(string(cmdOut), "\n")
-	metaLines := cmdLines[1:]
-	metaStr := strings.Join(metaLines, "\n")
+	metaStr := stripFirstLine(string(cmdOut))
 
 	// Split meta data triplets into chunks, with one triplet in each chunk
 	metaChunks := strings.Split(metaStr, "----")
 	// Loop over meta data "triplets" or "chunks"
 	for _, metaChunk := range metaChunks {
-		var attr, value, units string
-
 		// Extract attribute [name]
-		attr = getMetaDataFieldValue("attribute", metaChunk)
-		value = getMetaDataFieldValue("value", metaChunk)
-		units = getMetaDataFieldValue("units", metaChunk)
+		attr := getMetaDataFieldValue("attribute", metaChunk)
+		value := getMetaDataFieldValue("value", metaChunk)
+		units := getMetaDataFieldValue("units", metaChunk)
 
 		// Print a table row with attribute name, value and units
 		fmt.Fprintf(w, "<tr style=\"border-bottom: 1px solid grey;\"><td>%s</td><td>%s</td><td>%s</td></tr>", attr, value, units)
@@ -211,4 +207,11 @@ func getMetaDataFieldValue(fieldName string, metaData string) string {
 		value = matches[1]
 	}
 	return value
+}
+
+func stripFirstLine(str string) string {
+	lines := strings.Split(str, "\n")
+	newLines := lines[1:]
+	newText := strings.Join(newLines, "\n")
+	return newText
 }
