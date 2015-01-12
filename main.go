@@ -86,9 +86,8 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Execute the ils command, and iterate over the iput on the linesOut channel
 	ilsOutput := execCmd("ils")
-
-	lines := strings.Split(ilsOutput, "\n")
 	// Loop over lines in output from ils
+	lines := strings.Split(ilsOutput, "\n")
 	for _, line := range lines[:len(lines)-1] {
 		var isFolder bool
 
@@ -117,8 +116,7 @@ func irodsPathHandler(w http.ResponseWriter, r *http.Request) {
 
 			// Start the file/folder list
 			fmt.Fprint(w, "<ul>")
-		} else {
-			// The rest of the ils output lines
+		} else { // The rest of the ils output lines
 
 			fileName := pathParts[len(pathParts)-1]
 
