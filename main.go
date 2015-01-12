@@ -164,20 +164,11 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<table><tr><th>Attribute</th><th>Value</th><th>Units</th></tr>")
 
 	// Get the metadata about the current file
-	cmdOut := execCmd("imeta ls -d " + filePath)
-	metaStr := stripFirstLine(string(cmdOut))
+	metaDatas := getMetaDataForFile(filePath)
 
-	// Split meta data triplets into chunks, with one triplet in each chunk
-	metaChunks := strings.Split(metaStr, "----")
-	// Loop over meta data "triplets" or "chunks"
-	for _, metaChunk := range metaChunks {
-		// Extract attribute [name]
-		attr := getMetaDataFieldValue("attribute", metaChunk)
-		value := getMetaDataFieldValue("value", metaChunk)
-		units := getMetaDataFieldValue("units", metaChunk)
-
+	for _, md := range metaDatas {
 		// Print a table row with attribute name, value and units
-		fmt.Fprintf(w, "<tr style=\"border-bottom: 1px solid grey;\"><td>%s</td><td>%s</td><td>%s</td></tr>", attr, value, units)
+		fmt.Fprintf(w, "<tr style=\"border-bottom: 1px solid grey;\"><td>%s</td><td>%s</td><td>%s</td></tr>", md["attribute"], md["value"], md["units"])
 	}
 	fmt.Fprint(w, "</table>")
 	fmt.Fprint(w, footerHtml)
@@ -186,6 +177,26 @@ func irodsFileHandler(w http.ResponseWriter, r *http.Request) {
 // --------------------------------------------------------------------------------
 // Helper functions
 // --------------------------------------------------------------------------------
+
+func getMetaDataForFile(irodsFilePath string) []map[string]string {
+	// Get the metadata about the current file
+	cmdOut := execCmd("imeta ls -d " + irodsFilePath)
+	metaStr := stripFirstLine(string(cmdOut))
+
+	// Split meta data triplets into chunks, with one triplet in each chunk
+	metaChunks := strings.Split(metaStr, "----")
+	// Loop over meta data "triplets" or "chunks"
+	metaData := make([]map[string]string, len(metaChunks))
+	for i, metaChunk := range metaChunks {
+		// Extract attribute [name]
+		currentData := map[string]string{
+			"attribute": getMetaDataFieldValue("attribute", metaChunk),
+			"value":     getMetaDataFieldValue("value", metaChunk),
+			"units":     getMetaDataFieldValue("units", metaChunk)}
+		metaData[i] = currentData
+	}
+	return metaData
+}
 
 func getMetaDataFieldValue(fieldName string, metaData string) string {
 	var value string
